@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SP Park | RH — Triagem de Currículos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --cyan: #00C9C8;
+    --cyan-dark: #00A8A7;
+    --black: #0A0A0A;
+    --dark: #111827;
+    --card: #1A2332;
+    --border: #243040;
+    --text: #E8EDF3;
+    --muted: #7A8EA8;
+    --green: #22C55E;
+    --yellow: #F59E0B;
+    --red: #EF4444;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--dark); color: var(--text); font-family: var(--font); min-height: 100vh; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  header {
+    background: var(--black); border-bottom: 1px solid var(--border);
+    padding: 14px 28px; display: flex; align-items: center; gap: 16px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; background: var(--cyan); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 15px; color: var(--black);
+  }
+  .logo-text { font-size: 17px; font-weight: 700; }
+  .logo-sub { font-size: 11px; color: var(--muted); }
+  nav { margin-left: auto; display: flex; gap: 4px; }
+  .nav-btn {
+    background: none; border: none; color: var(--muted); font-size: 13px;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all .2s;
+    font-family: var(--font);
+  }
+  .nav-btn:hover { background: var(--card); color: var(--text); }
+  .nav-btn.active { background: var(--cyan); color: var(--black); font-weight: 600; }
+  main { flex: 1; padding: 28px; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+  .card-title { font-size: 14px; font-weight: 700; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea {
+    width: 100%; background: var(--dark); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-size: 14px; font-family: var(--font); transition: border .2s; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--cyan); }
+  select option { background: var(--dark); }
+  textarea { resize: vertical; min-height: 80px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 9px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: var(--font); transition: all .2s; text-decoration: none;
+  }
+  .btn-primary { background: var(--cyan); color: var(--black); }
+  .btn-primary:hover { background: var(--cyan-dark); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red); color: white; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+  .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+  .badge-red { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+  .badge-cyan { background: rgba(0,201,200,.15); color: var(--cyan); border: 1px solid rgba(0,201,200,.3); }
+  .score-ring {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; border: 3px solid; flex-shrink: 0;
+  }
+  .score-high { border-color: var(--green); color: var(--green); }
+  .score-mid { border-color: var(--yellow); color: var(--yellow); }
+  .score-low { border-color: var(--red); color: var(--red); }
+  .vaga-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 12px;
+  }
+  .vaga-card:hover { border-color: var(--cyan); }
+  .vaga-icon {
+    width: 44px; height: 44px; background: rgba(0,201,200,.1);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .vaga-info { flex: 1; }
+  .vaga-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .vaga-meta { font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+  .vaga-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 14px;
+    padding: 48px; text-align: center; cursor: pointer;
+    transition: all .2s; background: var(--card);
+  }
+  .upload-area:hover, .upload-area.drag { border-color: var(--cyan); background: rgba(0,201,200,.05); }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-sub { font-size: 13px; color: var(--muted); }
+  .candidato-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 14px;
+  }
+  .candidato-header { display: flex; align-items: center; gap: 16px; }
+  .candidato-name { font-size: 16px; font-weight: 700; }
+  .candidato-rank {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--cyan); color: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; flex-shrink: 0;
+  }
+  .score-breakdown { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin: 12px 0; }
+  .score-item { background: var(--dark); border-radius: 8px; padding: 10px 14px; border: 1px solid var(--border); }
+  .score-item-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .score-item-val { font-size: 15px; font-weight: 700; color: var(--cyan); }
+  .match-list { display: flex; flex-direction: column; gap: 6px; }
+  .match-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--dark); border-radius: 8px; padding: 8px 14px;
+    font-size: 13px; border: 1px solid var(--border);
+  }
+  .match-bar-wrap { flex: 1; margin: 0 12px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .match-bar { height: 100%; border-radius: 3px; background: var(--cyan); transition: width .6s; }
+  .match-score { font-weight: 700; font-size: 13px; min-width: 40px; text-align: right; }
+  .analysis-text {
+    font-size: 13px; line-height: 1.7; background: var(--dark);
+    border-radius: 8px; padding: 14px; border-left: 3px solid var(--cyan); margin-top: 12px;
+  }
+  .loader {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid rgba(0,201,200,.3); border-top-color: var(--cyan);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px; width: 100%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+  .stat-num { font-size: 36px; font-weight: 800; color: var(--cyan); }
+  .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-size: 20px; font-weight: 700; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 14px; }
+  .empty-text { font-size: 15px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { background: rgba(0,201,200,.1); color: var(--cyan); border: 1px solid rgba(0,201,200,.2); border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; border: 1px solid; }
+  .alert-info { background: rgba(0,201,200,.08); border-color: rgba(0,201,200,.3); color: var(--cyan); }
+  .alert-warn { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); color: var(--yellow); }
+  .file-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--dark); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px;
+  }
+  .file-item .remove { margin-left: auto; cursor: pointer; color: var(--muted); }
+  .file-item .remove:hover { color: var(--red); }
+  .progress-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--cyan); border-radius: 2px; transition: width .3s; }
+  .demo-banner {
+    background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3);
+    color: var(--yellow); border-radius: 10px; padding: 10px 16px;
+    font-size: 12px; font-weight: 600; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    nav { gap: 2px; }
+    .nav-btn { padding: 8px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">SP</div>
+      <div>
+        <div class="logo-text">SP Park</div>
+        <div class="logo-sub">Gestão de RH</div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showPage('vagas')">Vagas</button>
+      <button class="nav-btn" onclick="showPage('triagem')">Triagem</button>
+      <button class="nav-btn" onclick="showPage('candidatos')">Candidatos</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="section-header">
+        <div class="section-title">Dashboard</div>
+        <span id="dash-date" style="color:var(--muted);font-size:13px"></span>
+      </div>
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="stat-card"><div class="stat-num" id="stat-vagas">0</div><div class="stat-label">Vagas Ativas</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-candidatos">0</div><div class="stat-label">Candidatos Triados</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-aprovados">0</div><div class="stat-label">Score Alto (≥70)</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Vagas Recentes</div>
+          <div id="dash-vagas-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Nenhuma vaga cadastrada</div></div>
+          <button class="btn btn-outline" style="width:100%;margin-top:12px;justify-content:center" onclick="showPage('vagas')">Ver Todas as Vagas</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Candidatos</div>
+          <div id="dash-candidatos-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Nenhum candidato triado</div></div>
+          <button class="btn btn-outline" style="width:100%;margin-top:12px;justify-content:center" onclick="showPage('candidatos')">Ver Todos os Candidatos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VAGAS -->
+    <div id="page-vagas" class="page">
+      <div class="section-header">
+        <div class="section-title">Vagas</div>
+        <button class="btn btn-primary" onclick="openVagaModal()">+ Nova Vaga</button>
+      </div>
+      <div id="vagas-list">
+        <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Nenhuma vaga cadastrada.<br>Clique em "Nova Vaga" para começar.</div></div>
+      </div>
+    </div>
+
+    <!-- TRIAGEM -->
+    <div id="page-triagem" class="page">
+      <div class="section-header"><div class="section-title">Triagem de Currículos</div></div>
+      <div class="demo-banner">⚠️ Modo Demo — Score calculado por palavras-chave extraídas do PDF, sem API externa.</div>
+      <div class="grid-2" style="margin-bottom:20px">
+        <div class="form-group" style="margin:0">
+          <label>Selecionar Vaga</label>
+          <select id="triagem-vaga-select" onchange="atualizarBtnTriar()">
+            <option value="">— Escolha a vaga —</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Modo de Upload</label>
+          <select id="triagem-modo">
+            <option value="individual">Individual (1 currículo)</option>
+            <option value="lote">Em Lote (vários currículos)</option>
+          </select>
+        </div>
+      </div>
+      <div id="upload-area" class="upload-area"
+        onclick="document.getElementById('file-input').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+        <div class="upload-icon">📄</div>
+        <div class="upload-title">Arraste os currículos aqui</div>
+        <div class="upload-sub">ou clique para selecionar arquivos PDF</div>
+      </div>
+      <input type="file" id="file-input" accept=".pdf" multiple style="display:none" onchange="handleFiles(this.files)">
+      <div id="files-list" style="margin-top:16px"></div>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button id="btn-triar" class="btn btn-primary" onclick="iniciarTriagem()" disabled>🔍 Iniciar Triagem</button>
+        <button class="btn btn-outline" onclick="limparFiles()">Limpar</button>
+      </div>
+      <div id="triagem-progress" style="display:none;margin-top:20px">
+        <div class="alert alert-info" style="display:flex;align-items:center;gap:10px">
+          <span class="loader"></span>
+          <span id="triagem-status">Analisando currículos...</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="triagem-progress-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- CANDIDATOS -->
+    <div id="page-candidatos" class="page">
+      <div class="section-header">
+        <div class="section-title">Candidatos Triados</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="filter-vaga" style="width:auto;padding:8px 12px;font-size:13px" onchange="renderCandidatos()">
+            <option value="">Todas as vagas</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="exportarRanking()">⬇ Exportar</button>
+          <button class="btn btn-danger btn-sm" onclick="limparCandidatos()">🗑 Limpar</button>
+        </div>
+      </div>
+      <div id="candidatos-list">
+        <div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Nenhum candidato triado ainda.<br>Vá em "Triagem" para analisar currículos.</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL VAGA -->
+<div id="modal-vaga" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-title">📋 <span id="modal-vaga-title">Nova Vaga</span></div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Título da Vaga *</label>
+        <input id="v-titulo" type="text" placeholder="Ex: Manobrista">
+      </div>
+      <div class="form-group">
+        <label>Nível</label>
+        <select id="v-nivel">
+          <option value="1">Nível 1 — Padrão</option>
+          <option value="2">Nível 2 — Com Particularidades</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Endereço / Região *</label>
+      <input id="v-endereco" type="text" placeholder="Ex: Alphaville, Barueri - SP">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Escala</label>
+        <select id="v-escala">
+          <option value="12x36">12x36</option>
+          <option value="5x2 (seg-sex)">5x2 (Seg-Sex)</option>
+          <option value="6x1">6x1</option>
+          <option value="Plantão">Plantão</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantidade de Vagas</label>
+        <input id="v-qtd" type="number" min="1" value="1">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Salário (R$)</label>
+        <input id="v-salario" type="text" placeholder="Ex: 1.800,00">
+      </div>
+      <div class="form-group">
+        <label>Benefícios</label>
+        <input id="v-beneficios" type="text" placeholder="VT, VR, plano de saúde...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Requisitos Específicos</label>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-weight:400;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="req-ingles"> Inglês básico
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-weight:400;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="req-acesso"> Controle de acesso
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-weight:400;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="req-exp"> Experiência obrigatória
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-weight:400;cursor:pointer;color:var(--text)">
+          <input type="checkbox" id="req-superior"> Ensino superior
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Escolaridade Mínima</label>
+      <select id="v-escolaridade">
+        <option value="Fundamental">Ensino Fundamental</option>
+        <option value="Médio" selected>Ensino Médio Completo</option>
+        <option value="Técnico">Técnico</option>
+        <option value="Superior">Superior</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea id="v-obs" placeholder="Informações adicionais..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeVagaModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarVaga()">💾 Salvar Vaga</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CANDIDATO -->
+<div id="modal-candidato" class="modal-overlay hidden">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-title">👤 Detalhe do Candidato</div>
+    <div id="modal-candidato-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="btn-deletar-candidato">🗑 Remover</button>
+      <button class="btn btn-outline" onclick="fecharModalCandidato()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// STATE
+// ================================================================
+let vagas = JSON.parse(localStorage.getItem('sppark_vagas') || '[]');
+let candidatos = JSON.parse(localStorage.getItem('sppark_candidatos') || '[]');
+let filesToProcess = [];
+let editingVagaId = null;
+let candidatoAtualId = null;
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ================================================================
+// NAVEGAÇÃO
+// ================================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const t = b.textContent.toLowerCase();
+    if (name === 'dashboard' && t.includes('dash')) b.classList.add('active');
+    else if (name !== 'dashboard' && t.includes(name.slice(0,4))) b.classList.add('active');
+  });
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'vagas') renderVagas();
+  if (name === 'triagem') populateVagaSelect();
+  if (name === 'candidatos') { populateFilterVaga(); renderCandidatos(); }
+}
+
+// ================================================================
+// VAGAS
+// ================================================================
+function openVagaModal(id) {
+  editingVagaId = id || null;
+  document.getElementById('modal-vaga-title').textContent = id ? 'Editar Vaga' : 'Nova Vaga';
+  if (id) {
+    const v = vagas.find(x => x.id === id);
+    document.getElementById('v-titulo').value = v.titulo || '';
+    document.getElementById('v-endereco').value = v.endereco || '';
+    document.getElementById('v-salario').value = v.salario || '';
+    document.getElementById('v-beneficios').value = v.beneficios || '';
+    document.getElementById('v-obs').value = v.obs || '';
+    document.getElementById('v-nivel').value = v.nivel || '1';
+    document.getElementById('v-escala').value = v.escala || '12x36';
+    document.getElementById('v-escolaridade').value = v.escolaridade || 'Médio';
+    document.getElementById('v-qtd').value = v.qtd || 1;
+    ['ingles','acesso','exp','superior'].forEach(r => {
+      document.getElementById('req-'+r).checked = v.requisitos?.includes(r) || false;
+    });
+  } else {
+    ['v-titulo','v-endereco','v-salario','v-beneficios','v-obs'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('v-nivel').selectedIndex = 0;
+    document.getElementById('v-escala').selectedIndex = 0;
+    document.getElementById('v-escolaridade').value = 'Médio';
+    document.getElementById('v-qtd').value = 1;
+    ['ingles','acesso','exp','superior'].forEach(r => document.getElementById('req-'+r).checked = false);
+  }
+  document.getElementById('modal-vaga').classList.remove('hidden');
+}
+
+function closeVagaModal() {
+  document.getElementById('modal-vaga').classList.add('hidden');
+}
+
+function salvarVaga() {
+  const titulo = document.getElementById('v-titulo').value.trim();
+  const endereco = document.getElementById('v-endereco').value.trim();
+  if (!titulo || !endereco) { alert('Preencha Título e Endereço.'); return; }
+  const requisitos = ['ingles','acesso','exp','superior'].filter(r => document.getElementById('req-'+r).checked);
+  const vaga = {
+    id: editingVagaId || Date.now().toString(),
+    titulo, endereco,
+    nivel: document.getElementById('v-nivel').value,
+    escala: document.getElementById('v-escala').value,
+    qtd: parseInt(document.getElementById('v-qtd').value) || 1,
+    salario: document.getElementById('v-salario').value,
+    beneficios: document.getElementById('v-beneficios').value,
+    escolaridade: document.getElementById('v-escolaridade').value,
+    obs: document.getElementById('v-obs').value,
+    requisitos,
+    criada: editingVagaId ? vagas.find(x=>x.id===editingVagaId)?.criada : new Date().toLocaleDateString('pt-BR'),
+    ativa: true
+  };
+  vagas = editingVagaId ? vagas.map(v => v.id === editingVagaId ? vaga : v) : [...vagas, vaga];
+  saveData(); closeVagaModal(); renderVagas(); renderDashboard();
+}
+
+function deletarVaga(id) {
+  if (!confirm('Remover esta vaga? Os candidatos vinculados a ela serão mantidos.')) return;
+  vagas = vagas.filter(v => v.id !== id);
+  saveData(); renderVagas(); renderDashboard();
+}
+
+function renderVagas() {
+  const el = document.getElementById('vagas-list');
+  if (!vagas.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Nenhuma vaga cadastrada.<br>Clique em "Nova Vaga" para começar.</div></div>`;
+    return;
+  }
+  el.innerHTML = vagas.map(v => `
+    <div class="vaga-card">
+      <div class="vaga-icon">🚗</div>
+      <div class="vaga-info">
+        <div class="vaga-title">${v.titulo} <span class="badge ${v.nivel==='2'?'badge-yellow':'badge-cyan'}">Nível ${v.nivel}</span></div>
+        <div class="vaga-meta">
+          <span>📍 ${v.endereco}</span>
+          <span>⏱ ${v.escala}</span>
+          <span>👥 ${v.qtd} vaga(s)</span>
+          ${v.salario ? `<span>💰 R$ ${v.salario}</span>` : ''}
+          ${v.criada ? `<span>📅 ${v.criada}</span>` : ''}
+        </div>
+        ${v.requisitos?.length ? `<div class="tag-list">${v.requisitos.map(r=>`<span class="tag">${reqLabel(r)}</span>`).join('')}</div>` : ''}
+      </div>
+      <div class="vaga-actions">
+        <button class="btn btn-outline btn-sm" onclick="openVagaModal('${v.id}')">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deletarVaga('${v.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function reqLabel(r) {
+  return {ingles:'Inglês',acesso:'Controle de acesso',exp:'Exp. obrigatória',superior:'Ens. superior'}[r] || r;
+}
+
+// ================================================================
+// TRIAGEM
+// ================================================================
+function populateVagaSelect() {
+  const sel = document.getElementById('triagem-vaga-select');
+  sel.innerHTML = '<option value="">— Escolha a vaga —</option>' +
+    vagas.map(v => `<option value="${v.id}">${v.titulo} — ${v.endereco}</option>`).join('');
+  atualizarBtnTriar();
+}
+
+function atualizarBtnTriar() {
+  const vagaSel = document.getElementById('triagem-vaga-select').value;
+  document.getElementById('btn-triar').disabled = !filesToProcess.length || !vagaSel;
+}
+
+function handleFiles(files) {
+  const modo = document.getElementById('triagem-modo').value;
+  filesToProcess = modo === 'individual' ? [files[0]] : Array.from(files);
+  renderFilesList();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+}
+
+function renderFilesList() {
+  document.getElementById('files-list').innerHTML = filesToProcess.map((f,i) => `
+    <div class="file-item">
+      <span>📄</span><span>${f.name}</span>
+      <span style="color:var(--muted);font-size:12px">${(f.size/1024).toFixed(0)} KB</span>
+      <span class="remove" onclick="removeFile(${i})">✕</span>
+    </div>`).join('');
+  atualizarBtnTriar();
+}
+
+function removeFile(i) { filesToProcess.splice(i,1); renderFilesList(); }
+
+function limparFiles() {
+  filesToProcess = [];
+  document.getElementById('files-list').innerHTML = '';
+  document.getElementById('file-input').value = '';
+  atualizarBtnTriar();
+}
+
+async function extractPdfText(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(x => x.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+async function iniciarTriagem() {
+  const vagaId = document.getElementById('triagem-vaga-select').value;
+  if (!vagaId || !filesToProcess.length) return;
+  const vaga = vagas.find(v => v.id === vagaId);
+  document.getElementById('btn-triar').disabled = true;
+  document.getElementById('triagem-progress').style.display = 'block';
+  const total = filesToProcess.length;
+  let done = 0;
+  for (const file of filesToProcess) {
+    document.getElementById('triagem-status').textContent = `Analisando: ${file.name} (${done+1}/${total})`;
+    document.getElementById('triagem-progress-bar').style.width = ((done/total)*100) + '%';
+    let texto = '';
+    try { texto = await extractPdfText(file); } catch(e) { texto = file.name; }
+    await new Promise(r => setTimeout(r, 900));
+    const resultado = gerarAnaliseDemo(texto, vaga, file.name);
+    if (resultado) { candidatos.push(resultado); saveData(); }
+    done++;
+  }
+  document.getElementById('triagem-progress-bar').style.width = '100%';
+  document.getElementById('triagem-status').textContent = `✅ ${done} currículo(s) analisado(s)!`;
+  limparFiles();
+  setTimeout(() => {
+    document.getElementById('triagem-progress').style.display = 'none';
+    showPage('candidatos');
+  }, 1800);
+}
+
+// ================================================================
+// ANÁLISE DEMO — extrai dados reais do PDF por palavras-chave
+// ================================================================
+function gerarAnaliseDemo(texto, vaga, filename) {
+  const t = texto.toLowerCase();
+
+  // Nome
+  let nome = 'Candidato Não Identificado';
+  const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+  for (const linha of linhas.slice(0, 8)) {
+    if (/^[A-ZÀ-Ú][a-zà-ú]+(\s[A-ZÀ-Ú][a-zà-ú]+){1,4}$/.test(linha.trim())) {
+      nome = linha.trim(); break;
+    }
+  }
+
+  // CPF
+  const cpfMatch = texto.match(/\d{3}[.\-]?\d{3}[.\-]?\d{3}[.\-]?\d{2}/);
+  const cpf = cpfMatch
+    ? cpfMatch[0].replace(/\D/g,'').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4')
+    : null;
+
+  // Telefone
+  const telMatch = texto.match(/|$?\d{2}$|?\s?\d{4,5}[\s\-]?\d{4}/);
+  const telefone = telMatch ? telMatch[0].replace(/\D/g,'') : null;
+
+  // CNH
+  let cnh = 'Não mencionada'; let scoreCNH = 0;
+  if (/(cnh|carteira|habilitação|habilitacao)/i.test(t)) {
+    if (/cat(egoria)?\s*[cd]/i.test(t) || /\bcnh\s*[cd]\b/i.test(t)) { cnh = 'Categoria C/D'; scoreCNH = 25; }
+    else if (/cat(egoria)?\s*(ab|a\/b)/i.test(t)) { cnh = 'Categoria AB'; scoreCNH = 20; }
+    else if (/cat(egoria)?\s*b/i.test(t) || /\bcnh\s*b\b/i.test(t)) { cnh = 'Categoria B'; scoreCNH = 15; }
+    else { cnh = 'Mencionada'; scoreCNH = 10; }
+  }
+
+  // Experiência manobrista
+  let expMeses = 0; let scoreExpManobrista = 0;
+  if (/(manobrista|valet|manobr)/i.test(t)) {
+    const anos = t.match(/(\d+)\s*ano/); const meses = t.match(/(\d+)\s*m[eê]s/);
+    if (anos) expMeses = parseInt(anos[1]) * 12;
+    else if (meses) expMeses = parseInt(meses[1]);
+    else expMeses = 12;
+    scoreExpManobrista = expMeses >= 24 ? 20 : expMeses >= 12 ? 15 : expMeses >= 6 ? 10 : 5;
+  }
+
+  // Residência e proximidade
+  const mapaRegioes = {
+    'alphaville': 15, 'barueri': 15, 'santana de parnaíba': 15, 'santana de parnaiba': 15,
+    'carapicuíba': 12, 'carapicuiba': 12, 'osasco': 12, 'jandira': 10, 'cotia': 10,
+    'itapevi': 10, 'pinheiros': 8, 'lapa': 8, 'vila olímpia': 8, 'vila olimpia': 8,
+    'moema': 8, 'taboão da serra': 8, 'taboao da serra': 8, 'santo andré': 6,
+    'santo andre': 6, 'são bernardo': 6, 'sao bernardo': 6, 'guarulhos': 6,
+    'campinas': 4, 'sorocaba': 4, 'mogi das cruzes': 4
+  };
+  let residencia = 'Não identificada'; let scoreProximidade = 3;
+  for (const [reg, pts] of Object.entries(mapaRegioes)) {
+    if (t.includes(reg)) {
+      residencia = reg.split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+      scoreProximidade = pts; break;
+    }
+  }
+
+  // Estacionamento / hotelaria
+  const temEstacionamento = /(estacionamento|parking|hotelaria|hotel|valet)/i.test(t);
+  const scoreEstacionamento = temEstacionamento ? 10 : 0;
+
+  // Controle de acesso
+  const scoreAcesso = /(controle de acesso|cancela|portaria|guarita)/i.test(t) ? 10 :
+    /acesso/i.test(t) ? 5 : 0;
+
+  // Escolaridade
+  let scoreEscolaridade = 2;
+  if (/(superior|graduação|graduacao|faculdade|universidade)/i.test(t)) scoreEscolaridade = 10;
+  else if (/(técnico|tecnico)/i.test(t)) scoreEscolaridade = 8;
+  else if (/(médio|medio|segundo grau)/i.test(t)) scoreEscolaridade = 5;
+
+  // Disponibilidade 12x36
+  const scoreDisp = /(12x36|12 x 36|doze por trinta)/i.test(t) ? 10 : 3;
+
+  // Estabilidade — verifica quantidade de empregos mencionados
+  const qtdEmpregos = (t.match(/\b(20\d{2}|19\d{2})\b/g) || []).length;
+  const scoreEstab = qtdEmpregos <= 2 ? 5 : qtdEmpregos <= 4 ? 3 : 1;
+
+  // Referências
+  const scoreRef = /(referência|referencia|recomendação|recomendacao)/i.test(t) ? 5 : 0;
+
+  // Bônus inglês (Nível 2)
+  const temIngles = /(inglês|ingles|english)/i.test(t);
+  const scoreBonus = (vaga.nivel === '2' && temIngles) ? 5 : 0;
+
+  const scoreTotal = Math.min(100,
+    scoreCNH + scoreExpManobrista + scoreProximidade + scoreEstacionamento +
+    scoreAcesso + scoreEscolaridade + scoreDisp + scoreEstab + scoreRef + scoreBonus
+  );
+
+  let recomendacao = scoreTotal >= 70 ? 'Aprovado para entrevista' :
+    scoreTotal >= 45 ? 'Avaliar com cautela' : 'Não recomendado';
+
+  const pontosFavoraveis = [];
+  const alertas = [];
+  if (scoreCNH > 0) pontosFavoraveis.push(`CNH ${cnh} identificada`);
+  else alertas.push('CNH não mencionada no currículo');
+  if (scoreExpManobrista > 0) pontosFavoraveis.push(`${expMeses} meses de experiência como manobrista`);
+  else alertas.push('Sem experiência específica como manobrista identificada');
+  if (temEstacionamento) pontosFavoraveis.push('Experiência em estacionamento ou hotelaria');
+  if (scoreAcesso >= 10) pontosFavoraveis.push('Controle de acesso mencionado');
+  else alertas.push('Controle de acesso não identificado');
+  if (scoreProximidade >= 12) pontosFavoraveis.push('Reside próximo à vaga');
+  else if (scoreProximidade <= 4) alertas.push('Residência possivelmente distante da vaga');
+  if (scoreDisp < 10) alertas.push('Disponibilidade 12x36 não confirmada');
+  if (temIngles && vaga.nivel === '2') pontosFavoraveis.push('Inglês básico identificado');
+
+  // Match outras vagas
+  const outrasVagas = vagas.filter(v => v.id !== vaga.id);
+  const matchOutrasVagas = outrasVagas.map(ov => {
+    const variacao = Math.floor(Math.random() * 20) - 10;
+    return {
+      vagaId: ov.id,
+      vagaNome: `${ov.titulo} — ${ov.endereco}`,
+      score: Math.max(10, Math.min(100, scoreTotal + variacao)),
+      justificativa: 'Compatibilidade estimada com base no perfil.'
+    };
+  });
+
+  const melhorEntreOutras = matchOutrasVagas.sort((a,b)=>b.score-a.score)[0];
+  const melhorMatch = melhorEntreOutras && melhorEntreOutras.score > scoreTotal
+    ? melhorEntreOutras.vagaNome
+    : `${vaga.titulo} — ${vaga.endereco}`;
+
+  return {
+    id: Date.now().toString() + Math.random().toString(36).slice(2),
+    nome, arquivo: filename,
+    vagaId: vaga.id,
+    vagaNome: `${vaga.titulo} — ${vaga.endereco}`,
+    score: scoreTotal,
+    scoreDetalhado: {
+      cnh: scoreCNH, experienciaManobrista: scoreExpManobrista,
+      proximidade: scoreProximidade, expEstacionamento: scoreEstacionamento,
+      controleAcesso: scoreAcesso, escolaridade: scoreEscolaridade,
+      disponibilidade: scoreDisp, estabilidade: scoreEstab,
+      referencias: scoreRef, bonus: scoreBonus
+    },
+    resumo: `Análise automática por palavras-chave. CNH: ${cnh}. Experiência como manobrista: ${expMeses} meses. Residência detectada: ${residencia}. Score total: ${scoreTotal}/100.`,
+    pontosFavoraveis, alertas, cpf, telefone, residencia, cnh,
+    experienciaMeses: expMeses, recomendacao, matchOutrasVagas, melhorMatch,
+    triado: new Date().toLocaleDateString('pt-BR')
+  };
+}
+
+// ================================================================
+// CANDIDATOS
+// ================================================================
+function populateFilterVaga() {
+  const sel = document.getElementById('filter-vaga');
+  sel.innerHTML = '<option value="">Todas as vagas</option>' +
+    vagas.map(v => `<option value="${v.id}">${v.titulo} — ${v.endereco}</option>`).join('');
+}
+
+function renderCandidatos() {
+  const el = document.getElementById('candidatos-list');
+  const filtro = document.getElementById('filter-vaga').value;
+  let lista = (filtro ? candidatos.filter(c => c.vagaId === filtro) : candidatos)
+    .sort((a,b) => b.score - a.score);
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Nenhum candidato encontrado.</div></div>`;
+    return;
+  }
+  el.innerHTML = lista.map((c,i) => {
+    const cls = c.score>=70?'score-high':c.score>=45?'score-mid':'score-low';
+    const bCls = c.recomendacao?.includes('Aprovado')?'badge-green':c.recomendacao?.includes('cautela')?'badge-yellow':'badge-red';
+    return `
+    <div class="candidato-card">
+      <div class="candidato-header">
+        <div class="candidato-rank">${i+1}</div>
+        <div class="score-ring ${cls}">${c.score}</div>
+        <div style="flex:1">
+          <div class="candidato-name">${c.nome}</div>
+          <div style="font-size:12px;color:var(--muted)">${c.vagaNome} · ${c.triado}</div>
+          <div style="margin-top:4px">
+            <span class="badge ${bCls}">${c.recomendacao||'—'}</span>
+            ${c.melhorMatch && c.melhorMatch !== c.vagaNome
+              ? `<span class="badge badge-yellow" style="margin-left:6px">Match: ${c.melhorMatch}</span>` : ''}
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="verCandidato('${c.id}')">Ver Detalhes</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function limparCandidatos() {
+  if (!confirm('Remover todos os candidatos triados?')) return;
+  candidatos = []; saveData(); renderCandidatos(); renderDashboard();
+}
+
+function fecharModalCandidato() {
+  document.getElementById('modal-candidato').classList.add('hidden');
+  candidatoAtualId = null;
+}
+
+function verCandidato(id) {
+  const c = candidatos.find(x => x.id === id);
+  if (!c) return;
+  candidatoAtualId = id;
+  const cls = c.score>=70?'score-high':c.score>=45?'score-mid':'score-low';
+  const sd = c.scoreDetalhado || {};
+
+  document.getElementById('btn-deletar-candidato').onclick = () => {
+    if (!confirm(`Remover ${c.nome}?`)) return;
+    candidatos = candidatos.filter(x => x.id !== id);
+    saveData(); fecharModalCandidato(); renderCandidatos(); renderDashboard();
+  };
+
+  const matchHtml = c.matchOutrasVagas?.length ? `
+    <div class="card-title" style="margin-top:20px">Match com Outras Vagas</div>
+    <div class="match-list">
+      <div class="match-item">
+        <span style="min-width:160px;font-size:12px">${c.vagaNome}</span>
+        <div class="match-bar-wrap"><div class="match-bar" style="width:${c.score}%"></div></div>
+        <span class="match-score" style="color:var(--cyan)">${c.score}</span>
+      </div>
+      ${c.matchOutrasVagas.map(m=>`
+      <div class="match-item">
+        <span style="min-width:160px;font-size:12px">${m.vagaNome}</span>
+        <div class="match-bar-wrap"><div class="match-bar" style="width:${m.score}%"></div></div>
+        <span class="match-score">${m.score}</span>
+      </div>`).join('')}
+    </div>` : '';
+
+  document.getElementById('modal-candidato-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div class="score-ring ${cls}" style="width:88px;height:88px;font-size:28px">${c.score}</div>
+      <div>
+        <div style="font-size:20px;font-weight:700">${c.nome}</div>
+        <div style="color:var(--muted);font-size:13px">${c.vagaNome}</div>
+        <div style="margin-top:6px;font-size:13px">
+          CNH: <strong>${c.cnh}</strong> · Residência: <strong>${c.residencia}</strong> · Exp: <strong>${c.experienciaMeses}m</strong>
+        </div>
+      </div>
+    </div>
+    <div class="analysis-text">${c.resumo}</div>
+
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:var(--dark);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:10px">🔍 CPF</div>
+        <div style="display:flex;gap:8px">
+          <input id="cpf-input-${c.id}" type="text" placeholder="000.000.000-00"
+            value="${c.cpf||''}" oninput="formatarCPF(this)" maxlength="14"
+            style="flex:1;background:var(--card);border:1px solid ${c.cpf?'var(--green)':'var(--border)'};border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <button class="btn btn-primary btn-sm" onclick="salvarCPF('${c.id}')">💾</button>
+        </div>
+        <div style="margin-top:6px">
+          ${c.cpf?`<span class="badge badge-green">✓ Registrado</span>`:`<span class="badge badge-yellow">Pendente</span>`}
+        </div>
+      </div>
+      <div style="background:var(--dark);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:10px">📱 Telefone</div>
+        <div style="display:flex;gap:8px">
+          <input id="tel-input-${c.id}" type="text" placeholder="(11) 99999-9999"
+            value="${c.telefone?formatarTelDisplay(c.telefone):''}" oninput="formatarTel(this)" maxlength="15"
+            style="flex:1;background:var(--card);border:1px solid ${c.telefone?'var(--green)':'var(--border)'};border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <button class="btn btn-primary btn-sm" onclick="salvarTelefone('${c.id}')">💾</button>
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+          ${c.telefone
+            ? `<span class="badge badge-green">✓ Registrado</span>
+               <a href="https://wa.me/55${c.telefone}" target="_blank"
+                  style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">
+                 💬 WhatsApp
+               </a>`
+            : `<span class="badge badge-yellow">Pendente</span>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-top:20px">Pontuação Detalhada</div>
+    <div class="score-breakdown">
+      ${[['CNH',sd.cnh,25],['Exp. Manobrista',sd.experienciaManobrista,20],
+         ['Proximidade',sd.proximidade,15],['Exp. Estacionamento',sd.expEstacionamento,10],
+         ['Controle Acesso',sd.controleAcesso,10],['Escolaridade',sd.escolaridade,10],
+         ['Disponibilidade',sd.disponibilidade,10],['Estabilidade',sd.estabilidade,5],
+         ['Referências',sd.referencias,5],['Bônus',sd.bonus||0,5]
+        ].map(([l,v,m])=>`
+        <div class="score-item">
+          <div class="score-item-label">${l} (/${m})</div>
+          <div class="score-item-val">${v||0} pts</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div>
+        <div class="card-title">✅ Pontos Favoráveis</div>
+        ${(c.pontosFavoraveis||[]).length
+          ? c.pontosFavoraveis.map(p=>`<div style="font-size:13px;color:var(--green);margin-bottom:4px">• ${p}</div>`).join('')
+          : `<div style="font-size:13px;color:var(--muted)">Nenhum identificado</div>`}
+      </div>
+      <div>
+        <div class="card-title">⚠️ Alertas</div>
+        ${(c.alertas||[]).length
+          ? c.alertas.map(a=>`<div style="font-size:13px;color:var(--yellow);margin-bottom:4px">• ${a}</div>`).join('')
+          : `<div style="font-size:13px;color:var(--muted)">Nenhum alerta</div>`}
+      </div>
+    </div>
+    ${matchHtml}`;
+
+  document.getElementById('modal-candidato').classList.remove('hidden');
+
